@@ -35,6 +35,8 @@ public:
      */
     void ApplyCommands(catalogue::TransportCatalogue& catalogue) const;
 
+    void ReadInput(std::istream& in);
+
 private:
     std::vector<CommandDescription> commands_;
 };

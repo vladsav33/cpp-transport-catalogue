@@ -1,6 +1,7 @@
 #pragma once
 #include <deque>
 #include "geo.h"
+#include <optional>
 #include <set>
 #include <string>
 #include <unordered_map>
@@ -20,17 +21,17 @@ struct Bus {
 
 class TransportCatalogue {
 public:
-    void AddStop(Stop &stop);
+    void AddStop(const Stop &stop);
 
-    void AddBus(Bus &bus);
+    void AddBus(const Bus &bus);
 
-    std::string& FindStop(std::string_view stop_name);
+    std::optional<std::string> FindStop(std::string_view stop_name) const;
 
     std::string& FindBus(std::string& bus_name);
 
     std::string GetBusInfo(const std::string& bus_name) const;
 
-    std::string GetBusesByStop(const std::string& stop_name) const;
+    std::vector<std::string> GetBusesByStop(const std::string& stop_name) const;
 
 private:
     std::deque<Stop> stops;

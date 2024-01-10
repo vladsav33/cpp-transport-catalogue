@@ -1,7 +1,7 @@
 #include <cassert>
 #include <iostream>
+#include <optional>
 #include <set>
-#include <sstream>
 #include <string>
 #include <iomanip>
 #include "transport_catalogue.h"
@@ -10,14 +10,13 @@ using namespace std;
 
 namespace transport::catalogue {
 
-void TransportCatalogue::AddStop(Stop& stop) {
+void TransportCatalogue::AddStop(const Stop& stop) {
     stops.push_back(stop);
     stops_map[stop.name] = stops.back();
 }
 
-void TransportCatalogue::AddBus(Bus& bus) {
+void TransportCatalogue::AddBus(const Bus& bus) {
     for (auto& stop : bus.stop_names) {
-        stop = FindStop(stop);
         if (buses_stops_map.count(string(stop))) {
             set<string>& buses_set = buses_stops_map.at(string(stop));
             buses_set.insert(bus.name);
@@ -31,17 +30,19 @@ void TransportCatalogue::AddBus(Bus& bus) {
     buses_map[bus.name] = buses.back();
 }
 
-std::string& TransportCatalogue::FindStop(std::string_view stop_name) {
-    assert(stops_map.count(string(stop_name)) > 0);
+optional<string> TransportCatalogue::FindStop(string_view stop_name) const {
+    if (stops_map.count(string(stop_name)) == 0) {
+        return {};
+    }
     return stops_map.at(string(stop_name)).name;
 }
 
-std::string& TransportCatalogue::FindBus(std::string& bus_name) {
+string& TransportCatalogue::FindBus(string& bus_name) {
     assert(buses_map.count(bus_name) > 0);
     return bus_name;
 }
 
-std::string TransportCatalogue::GetBusInfo(const std::string& bus_name) const {
+string TransportCatalogue::GetBusInfo(const string& bus_name) const {
     ostringstream str_out;
     if (buses_map.count(bus_name) == 0) {
         str_out << "Bus "s << bus_name << ": not found"s;
@@ -72,23 +73,14 @@ double TransportCatalogue::ComputeDistanceStops(const vector<string_view>& stop_
     return distance;
 }
 
-std::string TransportCatalogue::GetBusesByStop(const std::string& stop_name) const {
-    ostringstream str_out;
-
-    str_out << "Stop "s << stop_name << ":"s;
-    if (stops_map.count(stop_name) == 0) {
-        str_out << " not found";
-        return str_out.str();
-    }
+vector<string> TransportCatalogue::GetBusesByStop(const std::string& stop_name) const {
+    vector<string> buses_by_stop;
     if (buses_stops_map.count(stop_name) == 0) {
-        str_out << " no buses";
-        return str_out.str();
+        return buses_by_stop;
     }
-
-    str_out << " buses";
     for (const auto& bus : buses_stops_map.at(stop_name)) {
-        str_out << " "s << bus;
+        buses_by_stop.emplace_back(" "s + bus);
     }
-    return str_out.str();
+    return buses_by_stop;
 }
 }

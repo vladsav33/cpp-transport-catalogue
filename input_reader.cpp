@@ -1,5 +1,6 @@
 #include <algorithm>
 #include "input_reader.h"
+#include <sstream>
 
 using namespace std;
 
@@ -113,8 +114,21 @@ void InputReader::ApplyCommands([[maybe_unused]] catalogue::TransportCatalogue& 
     for (auto& command : commands_) {
         if (command.command == "Bus") {
             catalogue::Bus bus = {command.id, ParseRoute(command.description)};
+            for (auto& stop : bus.stop_names) {
+                stop = catalogue.FindStop(stop).value();
+            }
             catalogue.AddBus(bus);
         }
+    }
+}
+
+void InputReader::ReadInput(std::istream& in) {
+    int base_request_count;
+    in >> base_request_count >> ws;
+    for (int i = 0; i < base_request_count; ++i) {
+        string line;
+        getline(in, line);
+        ParseLine(line);
     }
 }
 }
