@@ -5,7 +5,7 @@ using namespace std;
 
 namespace transport::stat {
 
-void ParseAndPrintStat(const catalogue::TransportCatalogue& transport_catalogue, std::string_view request,
+void ParseAndPrintStat(catalogue::TransportCatalogue& transport_catalogue, std::string_view request,
                        std::ostream& output) {
     auto first = request.find_first_not_of(' ');
     if (request[first] == 'B') {
@@ -20,7 +20,7 @@ void ParseAndPrintStat(const catalogue::TransportCatalogue& transport_catalogue,
         auto next = request.find_first_not_of(' ', 4);
         auto str = request.substr(next, last - next + 1);
         output << "Stop "s << str << ":"s;
-        if (!transport_catalogue.FindStop(str)) {
+        if (transport_catalogue.FindStop(str) == nullptr) {
             output << " not found"s << "\r\n"s;
             return;
         }
@@ -37,7 +37,7 @@ void ParseAndPrintStat(const catalogue::TransportCatalogue& transport_catalogue,
     }
 }
 
-void PrintInfo(catalogue::TransportCatalogue catalogue, istream& in, ostream& out) {
+void PrintInfo(catalogue::TransportCatalogue& catalogue, istream& in, ostream& out) {
     int stat_request_count;
     in >> stat_request_count >> ws;
     for (int i = 0; i < stat_request_count; ++i) {

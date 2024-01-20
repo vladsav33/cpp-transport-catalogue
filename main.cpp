@@ -1,5 +1,5 @@
-#include <iostream>
 #include "input_reader.h"
+#include <iostream>
 #include "stat_reader.h"
 
 using namespace std;

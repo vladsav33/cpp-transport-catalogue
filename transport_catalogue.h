@@ -14,9 +14,29 @@ struct Stop {
     geo::Coordinates coord;
 };
 
+struct PairStop {
+    std::pair<std::string, std::string> pair_stop;
+
+    bool operator==(const PairStop& other) const {
+        return (this->pair_stop.first == other.pair_stop.first && this->pair_stop.second == other.pair_stop.second);
+    }
+};
+
 struct Bus {
     std::string name;
-    std::vector<std::string_view> stop_names;
+    std::vector<Stop*> stop_names;
+};
+
+struct Distance {
+    PairStop stop_pair;
+    int distance;
+};
+
+class DistanceHasher {
+public:
+    size_t operator()(const transport::catalogue::PairStop& pair_stop) const {
+        return (std::hash<std::string>{} (pair_stop.pair_stop.first) + std::hash<std::string>{} (pair_stop.pair_stop.second));
+    }
 };
 
 class TransportCatalogue {
@@ -25,9 +45,9 @@ public:
 
     void AddBus(const Bus &bus);
 
-    std::optional<std::string> FindStop(std::string_view stop_name) const;
+    void AddDistance(const Distance& distance);
 
-    std::string& FindBus(std::string& bus_name);
+    Stop* FindStop(std::string_view stop_name);
 
     std::string GetBusInfo(const std::string& bus_name) const;
 
@@ -41,7 +61,10 @@ private:
     std::unordered_map<std::string, Bus> buses_map;
     std::unordered_map<std::string, std::set<std::string>> buses_stops_map;
 
-    int UniqueStops(const std::vector<std::string_view>&) const;
-    double ComputeDistanceStops(const std::vector<std::string_view>&) const;
+    std::unordered_map<PairStop, int, DistanceHasher> stop_distance;
+
+    int UniqueStops(std::vector<Stop*>) const;
+    double ComputeDistanceStops(std::vector<Stop*>) const;
+    double ComputeRoadDistance(std::vector<Stop*>) const;
 };
 }

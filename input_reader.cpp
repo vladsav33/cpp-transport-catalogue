@@ -1,6 +1,7 @@
 #include <algorithm>
 #include "input_reader.h"
-#include <sstream>
+#include <iostream>
+#include <string>
 
 using namespace std;
 
@@ -29,12 +30,38 @@ geo::Coordinates ParseCoordinates(std::string_view str) {
 /**
  * Удаляет пробелы в начале и конце строки
  */
-std::string_view Trim(std::string_view string) {
-    const auto start = string.find_first_not_of(' ');
-    if (start == string.npos) {
+    std::string_view Trim(std::string_view string) {
+        const auto start = string.find_first_not_of(' ');
+        if (start == string.npos) {
+            return {};
+        }
+        return string.substr(start, string.find_last_not_of(' ') + 1 - start);
+    }
+
+vector<catalogue::Distance> ParseDistance(std::string_view str) {
+    auto comma = str.find(',');
+    comma = str.find(',', comma + 1);
+
+    if (comma == str.npos) {
         return {};
     }
-    return string.substr(start, string.find_last_not_of(' ') + 1 - start);
+
+    vector<catalogue::Distance> distances;
+
+    str = Trim(str.substr(comma + 1));
+    while (str.length() > 0) {
+        comma = str.find(',');
+        string_view work_str = str.substr(0, comma);
+        auto meter = work_str.find('m');
+        int dist = stoi(string(work_str.substr(0, meter + 1)));
+        work_str = Trim(work_str.substr(meter + 1));
+        work_str = Trim(work_str.substr((work_str.find_first_not_of("to"))));
+        distances.push_back({pair<std::string, std::string>{"1", work_str}, dist});
+
+        str = comma != str.npos ? Trim(str.substr(comma + 1)) : "";
+    }
+
+    return distances;
 }
 
 /**
@@ -112,10 +139,21 @@ void InputReader::ApplyCommands([[maybe_unused]] catalogue::TransportCatalogue& 
     }
 
     for (auto& command : commands_) {
+        if (command.command == "Stop") {
+            vector<catalogue::Distance> distance = ParseDistance(command.description);
+            for (auto& distance_elem : distance) {
+                distance_elem.stop_pair.pair_stop.first = command.id;
+                catalogue.AddDistance(distance_elem);
+            }
+        }
+    }
+
+    for (auto& command : commands_) {
         if (command.command == "Bus") {
-            catalogue::Bus bus = {command.id, ParseRoute(command.description)};
-            for (auto& stop : bus.stop_names) {
-                stop = catalogue.FindStop(stop).value();
+            vector<string_view> stops = ParseRoute(command.description);
+            catalogue::Bus bus = {command.id, vector<transport::catalogue::Stop*>()};
+            for (auto& stop : stops) {
+                bus.stop_names.push_back(catalogue.FindStop(stop));
             }
             catalogue.AddBus(bus);
         }
