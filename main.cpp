@@ -1,15 +1,12 @@
-#include "input_reader.h"
 #include <iostream>
-#include "stat_reader.h"
+#include "json_reader.h"
 
 using namespace std;
 
 int main() {
     transport::catalogue::TransportCatalogue catalogue;
 
-    transport::input::InputReader reader;
-    reader.ReadInput(cin);
-    reader.ApplyCommands(catalogue);
+    json::JsonReader reader(move(json::Load(cin)));
 
-    transport::stat::PrintInfo(catalogue, cin, cout);
+    reader.ApplyCommands(catalogue);
 }
