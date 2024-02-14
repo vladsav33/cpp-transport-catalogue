@@ -1,5 +1,4 @@
 #include "json_reader.h"
-#include "map_renderer.h"
 #include <sstream>
 
 using namespace std;
@@ -46,9 +45,9 @@ JsonReader::JsonReader(Document document)
 {
 }
 
-void JsonReader::ApplyCommands(transport::catalogue::TransportCatalogue& catalogue) {
+RenderSettings JsonReader::ReadSettings() {
     auto render = doc_.GetRoot().AsMap().at("render_settings").AsMap();
-    RenderSetting setting;
+    RenderSettings setting;
     setting.width = render.at("width").AsDouble();
     setting.height = render.at("height").AsDouble();
     setting.padding = render.at("padding").AsDouble();
@@ -65,14 +64,17 @@ void JsonReader::ApplyCommands(transport::catalogue::TransportCatalogue& catalog
     for (auto& color : render.at("color_palette").AsArray()) {
         setting.color_palette.push_back(ReadNode(color));
     }
+    return setting;
+}
 
+void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catalogue) {
     auto base = doc_.GetRoot().AsMap().at("base_requests").AsArray();
     for (Node request : base) {
         auto item = request.AsMap();
         if (item.at("type").AsString() == "Stop") {
             Stop stop = {item.at("name").AsString(),
-                                            {item.at("latitude").AsDouble(),
-                                            item.at("longitude").AsDouble()}};
+                         {item.at("latitude").AsDouble(),
+                          item.at("longitude").AsDouble()}};
             catalogue.AddStop(stop);
         }
     }
@@ -111,7 +113,9 @@ void JsonReader::ApplyCommands(transport::catalogue::TransportCatalogue& catalog
             catalogue.AddBus(bus);
         }
     }
+}
 
+void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& catalogue) {
     auto stat = doc_.GetRoot().AsMap().at("stat_requests").AsArray();
     Array result;
     for (Node request : stat) {
@@ -157,7 +161,13 @@ void JsonReader::ApplyCommands(transport::catalogue::TransportCatalogue& catalog
             int id = item.at("id").AsInt();
             map["request_id"] = id;
             ostringstream out;
-            PrintMap(routes, setting, out);
+
+            MapRenderer renderer(routes, ReadSettings(), out);
+            renderer.InitSphere();
+            renderer.PrintRoutes();
+            renderer.PrintBusText();
+            renderer.PrintStops() ;
+            renderer.PrintMap();
             map["map"] = out.str();
             result.push_back(move(map));
         }

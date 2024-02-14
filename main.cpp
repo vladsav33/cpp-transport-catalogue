@@ -8,5 +8,7 @@ int main() {
 
     json::JsonReader reader(move(json::Load(cin)));
 
-    reader.ApplyCommands(catalogue);
+    reader.ReadSettings();
+    reader.ReadBaseRequest(catalogue);
+    reader.ReadStatRequests(catalogue);
 }

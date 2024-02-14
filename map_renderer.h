@@ -22,6 +22,7 @@ bool IsZero(double value);
 class SphereProjector {
 public:
     // points_begin и points_end задают начало и конец интервала элементов geo::Coordinates
+    SphereProjector() = default;
     template <typename PointInputIt>
     SphereProjector(PointInputIt points_begin, PointInputIt points_end,
                     double max_width, double max_height, double padding)
@@ -86,7 +87,7 @@ private:
     double zoom_coeff_ = 0;
 };
 
-struct RenderSetting {
+struct RenderSettings {
     double width;
     double height;
     double padding;
@@ -114,4 +115,22 @@ struct RenderSetting {
     }
 };
 
-void PrintMap(const std::map<std::string, Bus>&, RenderSetting&, std::ostream&);
+class MapRenderer {
+public:
+    MapRenderer(std::map<std::string, Bus>& buses_map, RenderSettings settings, std::ostream& out)
+            : buses_map_(buses_map), settings_(settings), out_(out) {
+    }
+
+    void InitSphere();
+    void PrintRoutes();
+    void PrintBusText();
+    void PrintStops();
+    void PrintMap();
+
+private:
+    std::map<std::string, Bus> buses_map_;
+    RenderSettings settings_;
+    std::ostream& out_;
+    svg::Document doc_;
+    SphereProjector sphere_;
+};

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "json.h"
+#include "map_renderer.h"
 #include <sstream>
 #include "transport_catalogue.h"
 
@@ -25,7 +26,9 @@ public:
     explicit JsonReader(Document);
     void SetDoc(Document&&);
     Document& GetDoc();
-    void ApplyCommands(transport::catalogue::TransportCatalogue& catalogue);
+    RenderSettings ReadSettings();
+    void ReadBaseRequest(transport::catalogue::TransportCatalogue& catalogue);
+    void ReadStatRequests(transport::catalogue::TransportCatalogue& catalogue);
 
 private:
     Document doc_;
