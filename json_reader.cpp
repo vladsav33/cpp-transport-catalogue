@@ -1,4 +1,5 @@
 #include "json_reader.h"
+#include "json_builder.h"
 #include <sstream>
 
 using namespace std;
@@ -11,7 +12,7 @@ Document::Document(Node root)
         : root_(move(root)) {
 }
 
-const Node &Document::GetRoot() const {
+Node &Document::GetRoot() {
     return root_;
 }
 
@@ -20,7 +21,7 @@ Document Load(istream &input) {
     return Document{node};
 }
 
-void Print(const Document &doc, std::ostream &output) {
+void Print(Document &doc, std::ostream &output) {
     PrintNode(doc.GetRoot(), output);
 }
 
@@ -46,8 +47,11 @@ JsonReader::JsonReader(Document document)
 }
 
 RenderSettings JsonReader::ReadSettings() {
-    auto render = doc_.GetRoot().AsMap().at("render_settings").AsMap();
     RenderSettings setting;
+    if (doc_.GetRoot().AsDict().count("render_settings") == 0) {
+        return setting;
+    }
+    auto render = doc_.GetRoot().AsDict().at("render_settings").AsDict();
     setting.width = render.at("width").AsDouble();
     setting.height = render.at("height").AsDouble();
     setting.padding = render.at("padding").AsDouble();
@@ -68,9 +72,9 @@ RenderSettings JsonReader::ReadSettings() {
 }
 
 void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catalogue) {
-    auto base = doc_.GetRoot().AsMap().at("base_requests").AsArray();
+    auto base = doc_.GetRoot().AsDict().at("base_requests").AsArray();
     for (Node request : base) {
-        auto item = request.AsMap();
+        auto item = request.AsDict();
         if (item.at("type").AsString() == "Stop") {
             Stop stop = {item.at("name").AsString(),
                          {item.at("latitude").AsDouble(),
@@ -80,9 +84,9 @@ void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catal
     }
 
     for (Node request : base) {
-        auto item = request.AsMap();
+        auto item = request.AsDict();
         if (item.at("type").AsString() == "Stop") {
-            auto distance = item.at("road_distances").AsMap();
+            auto distance = item.at("road_distances").AsDict();
             string name = item.at("name").AsString();
             for (auto& [key, value] : distance) {
                 transport::catalogue::Distance distance_elem;
@@ -95,7 +99,7 @@ void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catal
     }
 
     for (Node request : base) {
-        auto item = request.AsMap();
+        auto item = request.AsDict();
         if (item.at("type").AsString() == "Bus") {
             string name = item.at("name").AsString();
             Bus bus = {name, vector<Stop*>(), false};
@@ -116,26 +120,26 @@ void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catal
 }
 
 void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& catalogue) {
-    auto stat = doc_.GetRoot().AsMap().at("stat_requests").AsArray();
+    auto stat = doc_.GetRoot().AsDict().at("stat_requests").AsArray();
     Array result;
+    Node node(result);
     for (Node request : stat) {
-        auto item = request.AsMap();
+        auto item = request.AsDict();
 
         if (item.at("type").AsString() == "Bus") {
             string name = item.at("name").AsString();
             int id = item.at("id").AsInt();
-            Dict bus;
-            bus["request_id"] = id;
             auto bus_stat = catalogue.GetBusInfo(name);
             if (bus_stat.has_value()) {
-                bus["curvature"] = bus_stat.value().curvature;
-                bus["route_length"] = bus_stat.value().route_length;
-                bus["stop_count"] = bus_stat.value().stop_count;
-                bus["unique_stop_count"] = bus_stat.value().unique_stop_count;
+                node.AsArray().emplace_back(Builder{}.StartDict().Key("request_id").Value(id)
+                        .Key("curvature").Value(bus_stat.value().curvature)
+                        .Key("route_length").Value(bus_stat.value().route_length)
+                        .Key("stop_count").Value(bus_stat.value().stop_count)
+                        .Key("unique_stop_count").Value(bus_stat.value().unique_stop_count).EndDict().Build().AsDict());
             } else {
-                bus["error_message"] = "not found"s;
+                node.AsArray().emplace_back(Builder{}.StartDict().Key("request_id").Value(id)
+                        .Key("error_message").Value("not found"s).EndDict().Build().AsDict());
             }
-            result.push_back(move(bus));
         }
 
         if (item.at("type").AsString() == "Stop") {
@@ -147,12 +151,12 @@ void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& cata
                 buses_list.push_back(Node(move(bus)));
             }
             if (buses_list.empty() && catalogue.FindStop(name) == nullptr) {
-                buses["error_message"] = "not found"s;
+                node.AsArray().emplace_back(Builder{}.StartDict().Key("error_message").Value("not found"s)
+                    .Key("request_id").Value(id).EndDict().Build().AsDict());
             } else {
-                buses["buses"] = buses_list;
+                node.AsArray().emplace_back(Builder{}.StartDict().Key("buses").Value(buses_list)
+                                                    .Key("request_id").Value(id).EndDict().Build().AsDict());
             }
-            buses["request_id"] = id;
-            result.push_back(move(buses));
         }
 
         if (item.at("type").AsString() == "Map") {
@@ -168,11 +172,12 @@ void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& cata
             renderer.PrintBusText();
             renderer.PrintStops() ;
             renderer.PrintMap();
-            map["map"] = out.str();
-            result.push_back(move(map));
+            node.AsArray().emplace_back(Builder{}.StartDict().Key("map").Value(out.str())
+                .Key("request_id").Value(id).EndDict().Build().AsDict());
         }
     }
-    PrintNode(Node(move(result)), cout);
+    Document doc = Document{node};
+    Print(doc, cout);
 }
 
 svg::Color ReadNode(Node node) {

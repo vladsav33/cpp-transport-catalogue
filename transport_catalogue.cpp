@@ -95,7 +95,7 @@ namespace transport::catalogue {
         double distance = 0;
         auto prev_stop = stop_names[0];
         Stop* stop;
-        for (int i = 1; i < stop_names.size(); ++i) {
+        for (size_t i = 1; i < stop_names.size(); ++i) {
             stop = stop_names[i];
             if (stop_distance.count({pair<string, string>(prev_stop->name, stop->name)}) > 0) {
                 distance += stop_distance.at({pair<string, string>(prev_stop->name, stop->name)});

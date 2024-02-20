@@ -101,7 +101,7 @@ struct RenderSettings {
     double underlayer_width;
     std::vector<svg::Color> color_palette;
 
-    int index = 0;
+    size_t index = 0;
 
     svg::Color nextColor() {
         if (index == color_palette.size()) {

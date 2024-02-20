@@ -11,7 +11,7 @@ class Document {
 public:
     explicit Document(Node root);
 
-    const Node &GetRoot() const;
+    Node &GetRoot();
 
     bool operator==(const Document &other) const;
 
@@ -36,6 +36,6 @@ private:
 
 Document Load(std::istream &input);
 
-void Print(const Document &doc, std::ostream &output);
+void Print(Document &doc, std::ostream &output);
 
 } //namespace json

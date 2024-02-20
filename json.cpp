@@ -150,28 +150,28 @@ Node::Node(string value)
     }
 }
 
-const Array &Node::AsArray() const {
+Array &Node::AsArray() {
     if (!holds_alternative<Array>(value_)) {
-        throw logic_error("No int");
+        throw logic_error("No Array");
     }
     return get<Array>(value_);
 }
 
-const Dict &Node::AsMap() const {
+Dict &Node::AsDict() {
     if (!holds_alternative<Dict>(value_)) {
         throw logic_error("No Map");
     }
     return get<Dict>(value_);
 }
 
-int Node::AsInt() const {
+int Node::AsInt() {
     if (!holds_alternative<int>(value_)) {
         throw logic_error("No int");
     }
     return get<int>(value_);
 }
 
-double Node::AsDouble() const {
+double Node::AsDouble() {
     if (!holds_alternative<int>(value_) && !holds_alternative<double>(value_)) {
         throw logic_error("No double");
     }
@@ -182,14 +182,14 @@ double Node::AsDouble() const {
     }
 }
 
-const string &Node::AsString() const {
+string &Node::AsString() {
     if (!holds_alternative<string>(value_)) {
         throw logic_error("No string");
     }
     return get<string>(value_);
 }
 
-bool Node::AsBool() const {
+bool Node::AsBool() {
     if (!holds_alternative<bool>(value_)) {
         throw logic_error("No bool");
     }
@@ -230,7 +230,8 @@ void PrintValue(Array value, std::ostream &out) {
         if (!first) {
             out << "," << endl;
         }
-        PrintNode(Node(val), out);
+        Node node(val);
+        PrintNode(node, out);
         first = false;
     }
     out << "]";
@@ -262,7 +263,7 @@ template<typename Value>
 void PrintValue(const Value &value, std::ostream &out) {
 }
 
-void PrintNode(const Node &node, std::ostream &out) {
+void PrintNode(Node node, std::ostream &out) {
     std::visit([&out](const auto &value) { PrintValue(value, out); },
                node.GetValue());
 }
@@ -296,7 +297,7 @@ bool Node::IsArray() const {
     return holds_alternative<Array>(value_);
 }
 
-bool Node::IsMap() const {
+bool Node::IsDict() const {
     return holds_alternative<Dict>(value_);
 }
 

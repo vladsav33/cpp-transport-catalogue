@@ -47,19 +47,19 @@ namespace json {
 
         Node(std::string value);
 
-        const Array &AsArray() const;
+        Array &AsArray();
 
-        const Dict &AsMap() const;
+        Dict &AsDict();
 
-        int AsInt() const;
+        int AsInt();
 
-        double AsDouble() const;
+        double AsDouble();
 
-        const std::string &AsString() const;
+        std::string &AsString();
 
-        bool AsBool() const;
+        bool AsBool();
 
-        const Value &GetValue() const {
+        Value &GetValue() {
             return value_;
         }
 
@@ -77,7 +77,7 @@ namespace json {
 
         bool IsArray() const;
 
-        bool IsMap() const;
+        bool IsDict() const;
 
         bool operator==(const Node &other) const;
 
@@ -104,7 +104,7 @@ namespace json {
     template<typename Value>
     void PrintValue(const Value &value, std::ostream &out);
 
-    void PrintNode(const Node &node, std::ostream &out);
+    void PrintNode(Node node, std::ostream &out);
 
     Node LoadArray(std::istream &input);
     Node LoadDict(std::istream &input);
