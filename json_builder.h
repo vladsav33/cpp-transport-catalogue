@@ -5,8 +5,6 @@ namespace json
 class Builder;
 class KeyContext;
 class ArrayContext;
-class DictValueContext;
-class ArrayContextValue;
 class DictContext;
 
 class Builder {
@@ -43,51 +41,13 @@ private:
     Builder& builder_;
 };
 
-class ArrayContextValue {
-public:
-    ArrayContextValue(Builder& builder)
-            : builder_(builder) {};
-    ArrayContextValue& Value(Node node) {
-        builder_.Value(node);
-        auto tmp = new ArrayContextValue(builder_);
-        return *tmp;
-    }
-    DictContext& StartDict() {
-        return builder_.StartDict();
-    }
-    ArrayContext& StartArray() {
-        return builder_.StartArray();
-    }
-    Builder& EndArray() {
-        return builder_.EndArray();
-    }
-    Builder& builder_;
-private:
-
-};
-
-class DictValueContext {
-public:
-    DictValueContext(Builder& builder)
-            : builder_(builder) {};
-    KeyContext& Key(std::string str) {
-        return builder_.Key(str);
-    }
-    Builder& EndDict() {
-        return builder_.EndDict();
-    }
-private:
-    Builder& builder_;
-};
-
 class ArrayContext {
 public:
     ArrayContext(Builder& builder)
         : builder_(builder) {};
-    ArrayContextValue& Value(Node node) {
+    ArrayContext& Value(Node node) {
         builder_.Value(std::move(node));
-        auto tmp = new ArrayContextValue(builder_);
-        return *tmp;
+        return *this;
     }
     DictContext &StartDict() {
         return builder_.StartDict();
@@ -106,9 +66,9 @@ class KeyContext {
 public:
     KeyContext(Builder& builder)
         : builder_(builder) {};
-    DictValueContext& Value(Node node) {
+    DictContext& Value(Node node) {
         builder_.Value(node);
-        auto tmp = new DictValueContext(builder_);
+        auto tmp = new DictContext(builder_);
         return *tmp;
     }
     DictContext& StartDict() {

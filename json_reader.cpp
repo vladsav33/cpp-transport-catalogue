@@ -174,6 +174,7 @@ void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& cata
             renderer.PrintMap();
             node.AsArray().emplace_back(Builder{}.StartDict().Key("map").Value(out.str())
                 .Key("request_id").Value(id).EndDict().Build().AsDict());
+
         }
     }
     Document doc = Document{node};
