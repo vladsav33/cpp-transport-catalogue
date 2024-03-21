@@ -2,6 +2,7 @@
 
 #include "json.h"
 #include "map_renderer.h"
+#include "router.h"
 #include <sstream>
 #include "transport_catalogue.h"
 
@@ -27,6 +28,7 @@ public:
     void SetDoc(Document&&);
     Document& GetDoc();
     RenderSettings ReadSettings();
+    void ReadRouterSettings(transport::catalogue::TransportCatalogue& catalogue);
     void ReadBaseRequest(transport::catalogue::TransportCatalogue& catalogue);
     void ReadStatRequests(transport::catalogue::TransportCatalogue& catalogue);
 

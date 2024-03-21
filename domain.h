@@ -18,6 +18,7 @@
 struct Stop {
     std::string name;
     transport::geo::Coordinates coord;
+    size_t id;
 };
 
 struct PairStop {
@@ -42,4 +43,11 @@ struct BusStat {
     double route_length;
     int stop_count;
     int unique_stop_count;
+};
+
+struct EdgeDetails {
+    std::string stop_name;
+    std::string bus_name;
+    int num_stops;
+    double ride_time;
 };

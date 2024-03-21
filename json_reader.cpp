@@ -46,6 +46,12 @@ JsonReader::JsonReader(Document document)
 {
 }
 
+void JsonReader::ReadRouterSettings(transport::catalogue::TransportCatalogue &catalogue) {
+    auto router_setting = doc_.GetRoot().AsDict().at("routing_settings").AsDict();
+    catalogue.SetWait(router_setting.at("bus_wait_time").AsInt());
+    catalogue.SetVelocity(router_setting.at("bus_velocity").AsDouble());
+}
+
 RenderSettings JsonReader::ReadSettings() {
     RenderSettings setting;
     if (doc_.GetRoot().AsDict().count("render_settings") == 0) {
@@ -78,10 +84,12 @@ void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catal
         if (item.at("type").AsString() == "Stop") {
             Stop stop = {item.at("name").AsString(),
                          {item.at("latitude").AsDouble(),
-                          item.at("longitude").AsDouble()}};
+                          item.at("longitude").AsDouble()}, 0};
             catalogue.AddStop(stop);
         }
     }
+
+//    catalogue.SetGraph(graph::DirectedWeightedGraph<double>(catalogue.GetStopsNumber()));
 
     for (Node request : base) {
         auto item = request.AsDict();
@@ -120,12 +128,12 @@ void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catal
 }
 
 void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& catalogue) {
+    graph::Router router(catalogue.GetBusGraph());
     auto stat = doc_.GetRoot().AsDict().at("stat_requests").AsArray();
     Array result;
     Node node(result);
     for (Node request : stat) {
         auto item = request.AsDict();
-
         if (item.at("type").AsString() == "Bus") {
             string name = item.at("name").AsString();
             int id = item.at("id").AsInt();
@@ -175,6 +183,44 @@ void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& cata
             node.AsArray().emplace_back(Builder{}.StartDict().Key("map").Value(out.str())
                 .Key("request_id").Value(id).EndDict().Build().AsDict());
 
+        }
+
+        if (item.at("type").AsString() == "Route") {
+            int id = item.at("id").AsInt();
+            string from = item.at("from").AsString();
+            string to = item.at("to").AsString();
+            auto route = router.BuildRoute(catalogue.GetId(from), catalogue.GetId(to));
+            if (!route.has_value()) {
+                node.AsArray().emplace_back(Builder{}.StartDict().Key("request_id").Value(id)
+                                                    .Key("error_message").Value("not found"s)
+                                                    .EndDict().Build().AsDict());
+                continue;
+            }
+            Array items;
+            Dict dict;
+            int wait_time = catalogue.GetWait();
+
+            for (auto& edge_id : route.value().edges) {
+                auto edge = catalogue.GetBusGraph().GetEdge(edge_id);
+
+                dict = Builder{}.StartDict().Key("stop_name").Value(edge.stop_name)
+                        .Key("time").Value(wait_time)
+                        .Key("type").Value("Wait"s)
+                        .EndDict().Build().AsDict();
+                items.emplace_back(dict);
+
+                dict = Builder{}.StartDict().Key("bus").Value(edge.bus_name)
+                        .Key("span_count").Value(edge.num_stops)
+                        .Key("time").Value(edge.ride_time)
+                        .Key("type").Value("Bus"s)
+                        .EndDict().Build().AsDict();
+                items.emplace_back(dict);
+            }
+
+            node.AsArray().emplace_back(Builder{}.StartDict().Key("request_id").Value(id)
+                    .Key("total_time").Value(route.value().weight)
+                    .Key("items").Value(items)
+                    .EndDict().Build().AsDict());
         }
     }
     Document doc = Document{node};

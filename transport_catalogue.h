@@ -2,12 +2,16 @@
 #include <deque>
 #include "domain.h"
 #include "geo.h"
+#include "graph.h"
 #include <optional>
 #include <set>
 #include <string>
+#include "transport_router.h"
 #include <unordered_map>
 #include <map>
 #include <vector>
+
+static int BUS_STOPS_MAX = 100;
 
 namespace transport::catalogue {
 
@@ -25,7 +29,9 @@ namespace transport::catalogue {
 
     class TransportCatalogue {
     public:
-        void AddStop(const Stop &stop);
+        void AddStop(Stop &stop);
+
+        size_t GetId(std::string stop_name);
 
         void AddBus(const Bus &bus);
 
@@ -40,19 +46,44 @@ namespace transport::catalogue {
         std::vector<std::vector<transport::geo::Coordinates>> GetRouteCoordinates();
 
         std::map<std::string, Bus> GetRoutes();
+        graph::DirectedWeightedGraph<double>& GetBusGraph() {
+            return bus_graph_;
+        }
 
-            private:
+        void SetWait(int wait) {
+            wait_time_ = wait;
+        }
+
+        void SetVelocity(int velocity) {
+            velocity_ = velocity;
+        }
+
+        int GetWait() {
+            return wait_time_;
+        }
+
+        std::map<int, EdgeDetails> GetEdgeMap() {
+            return edge_map;
+        }
+
+
+    private:
         std::deque<Stop> stops;
         std::deque<Bus> buses;
 
         std::unordered_map<std::string, Stop> stops_map;
         std::map<std::string, Bus> buses_map;
         std::unordered_map<std::string, std::set<std::string>> buses_stops_map;
-
         std::unordered_map<PairStop, int, DistanceHasher> stop_distance;
+        std::map<int, EdgeDetails> edge_map;
 
         int UniqueStops(std::vector<Stop*>) const;
         double ComputeDistanceStops(std::vector<Stop*>) const;
         double ComputeRoadDistance(std::vector<Stop*>) const;
+
+        graph::DirectedWeightedGraph<double> bus_graph_ = graph::DirectedWeightedGraph<double>(BUS_STOPS_MAX);
+
+        int wait_time_;
+        double velocity_;
     };
 }

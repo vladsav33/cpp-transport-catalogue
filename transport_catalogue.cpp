@@ -9,13 +9,20 @@ using namespace std;
 
 namespace transport::catalogue {
 
-    void TransportCatalogue::AddStop(const Stop& stop) {
+    void TransportCatalogue::AddStop(Stop& stop) {
+        stop.id = stops.size();
         stops.push_back(stop);
         stops_map[stop.name] = stops.back();
     }
 
+    std::size_t TransportCatalogue::GetId(string stop_name) {
+        assert(stops_map.count(stop_name) > 0);
+        return stops_map.at(stop_name).id;
+    }
+
     void TransportCatalogue::AddBus(const Bus& bus) {
-        for (auto& stop : bus.stop_names) {
+        for (int i = 0; i < bus.stop_names.size(); ++i) {
+            auto stop = bus.stop_names.at(i);
             if (buses_stops_map.count(string(stop->name))) {
                 set<string>& buses_set = buses_stops_map.at(string(stop->name));
                 buses_set.insert(bus.name);
@@ -23,6 +30,23 @@ namespace transport::catalogue {
                 set<string> buses_set;
                 buses_set.insert(bus.name);
                 buses_stops_map[string(stop->name)] = buses_set;
+            }
+
+            int distance = 0;
+            int stops_count = 1;
+            string prev_stop = stop->name;
+            for (int j = i + 1; j < bus.stop_names.size(); ++j) {
+                auto next_stop = bus.stop_names.at(j);
+                if (stop_distance.count({pair(prev_stop, next_stop->name)}) > 0) {
+                    distance += stop_distance.at({pair(prev_stop, next_stop->name)});
+                } else {
+                    distance += stop_distance.at({pair(next_stop->name, prev_stop)});
+                }
+                int edge = bus_graph_.AddEdge({GetId(stop->name), GetId(next_stop->name),
+                        distance / (velocity_ * 1000 / 60) + wait_time_, bus.name, stop->name, stops_count++,
+                       distance / (velocity_ * 1000 / 60)});
+                edge_map[edge] = {stop->name, bus.name, stops_count++, distance / (velocity_ * 1000 / 60)};
+                prev_stop = next_stop->name;
             }
         }
         buses.push_back(bus);
@@ -65,7 +89,6 @@ namespace transport::catalogue {
             cout << bus << endl;
             vector<transport::geo::Coordinates> route;
             for (auto& stop : value.stop_names) {
-//                cout << stop->name << endl;
                 route.push_back(stop->coord);
             }
             routes.emplace_back(route);
