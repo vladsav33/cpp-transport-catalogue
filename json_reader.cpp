@@ -89,8 +89,6 @@ void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catal
         }
     }
 
-//    catalogue.SetGraph(graph::DirectedWeightedGraph<double>(catalogue.GetStopsNumber()));
-
     for (Node request : base) {
         auto item = request.AsDict();
         if (item.at("type").AsString() == "Stop") {
@@ -122,13 +120,14 @@ void JsonReader::ReadBaseRequest(transport::catalogue::TransportCatalogue& catal
             } else {
                 bus.round_route = true;
             }
-            catalogue.AddBus(bus);
+            catalogue.AddBus(bus, router_);
         }
     }
 }
 
 void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& catalogue) {
-    graph::Router router(catalogue.GetBusGraph());
+    router_.InitRouter();
+
     auto stat = doc_.GetRoot().AsDict().at("stat_requests").AsArray();
     Array result;
     Node node(result);
@@ -189,19 +188,20 @@ void JsonReader::ReadStatRequests(transport::catalogue::TransportCatalogue& cata
             int id = item.at("id").AsInt();
             string from = item.at("from").AsString();
             string to = item.at("to").AsString();
-            auto route = router.BuildRoute(catalogue.GetId(from), catalogue.GetId(to));
+            auto route = router_.BuildRoute(catalogue.GetId(from), catalogue.GetId(to));
             if (!route.has_value()) {
                 node.AsArray().emplace_back(Builder{}.StartDict().Key("request_id").Value(id)
                                                     .Key("error_message").Value("not found"s)
                                                     .EndDict().Build().AsDict());
                 continue;
             }
+
             Array items;
             Dict dict;
             int wait_time = catalogue.GetWait();
 
             for (auto& edge_id : route.value().edges) {
-                auto edge = catalogue.GetBusGraph().GetEdge(edge_id);
+                auto edge = router_.GetGraph().GetEdge(edge_id);
 
                 dict = Builder{}.StartDict().Key("stop_name").Value(edge.stop_name)
                         .Key("time").Value(wait_time)

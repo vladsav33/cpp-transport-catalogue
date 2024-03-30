@@ -34,6 +34,7 @@ public:
 
 private:
     Document doc_;
+    TransportRouter router_;
 };
 
 Document Load(std::istream &input);

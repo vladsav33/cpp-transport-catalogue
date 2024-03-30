@@ -20,7 +20,7 @@ namespace transport::catalogue {
         return stops_map.at(stop_name).id;
     }
 
-    void TransportCatalogue::AddBus(const Bus& bus) {
+    void TransportCatalogue::AddBus(const Bus& bus, TransportRouter& router) {
         for (int i = 0; i < bus.stop_names.size(); ++i) {
             auto stop = bus.stop_names.at(i);
             if (buses_stops_map.count(string(stop->name))) {
@@ -42,10 +42,9 @@ namespace transport::catalogue {
                 } else {
                     distance += stop_distance.at({pair(next_stop->name, prev_stop)});
                 }
-                int edge = bus_graph_.AddEdge({GetId(stop->name), GetId(next_stop->name),
+                router.GetGraph().AddEdge({GetId(stop->name), GetId(next_stop->name),
                         distance / (velocity_ * 1000 / 60) + wait_time_, bus.name, stop->name, stops_count++,
                        distance / (velocity_ * 1000 / 60)});
-                edge_map[edge] = {stop->name, bus.name, stops_count++, distance / (velocity_ * 1000 / 60)};
                 prev_stop = next_stop->name;
             }
         }

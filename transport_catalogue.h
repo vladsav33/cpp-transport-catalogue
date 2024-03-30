@@ -11,8 +11,6 @@
 #include <map>
 #include <vector>
 
-static int BUS_STOPS_MAX = 100;
-
 namespace transport::catalogue {
 
     struct Distance {
@@ -33,7 +31,7 @@ namespace transport::catalogue {
 
         size_t GetId(std::string stop_name);
 
-        void AddBus(const Bus &bus);
+        void AddBus(const Bus &bus, TransportRouter& router);
 
         void AddDistance(const Distance& distance);
 
@@ -46,9 +44,6 @@ namespace transport::catalogue {
         std::vector<std::vector<transport::geo::Coordinates>> GetRouteCoordinates();
 
         std::map<std::string, Bus> GetRoutes();
-        graph::DirectedWeightedGraph<double>& GetBusGraph() {
-            return bus_graph_;
-        }
 
         void SetWait(int wait) {
             wait_time_ = wait;
@@ -60,6 +55,10 @@ namespace transport::catalogue {
 
         int GetWait() {
             return wait_time_;
+        }
+
+        double GetVelocity() {
+            return velocity_;
         }
 
         std::map<int, EdgeDetails> GetEdgeMap() {
@@ -80,8 +79,6 @@ namespace transport::catalogue {
         int UniqueStops(std::vector<Stop*>) const;
         double ComputeDistanceStops(std::vector<Stop*>) const;
         double ComputeRoadDistance(std::vector<Stop*>) const;
-
-        graph::DirectedWeightedGraph<double> bus_graph_ = graph::DirectedWeightedGraph<double>(BUS_STOPS_MAX);
 
         int wait_time_;
         double velocity_;
